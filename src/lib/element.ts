@@ -104,6 +104,12 @@ interface StrokePair extends Base {
   strokeIndex: number;
 }
 
+interface Custom extends Base {
+  type: "自定义";
+  subtype: string;
+  index: number;
+}
+
 export type CodableObject =
   | This
   | Constant
@@ -111,7 +117,8 @@ export type CodableObject =
   | Pronunciation
   | Root
   | Stroke
-  | StrokePair;
+  | StrokePair
+  | Custom;
 
 export const renderName = (object: CodableObject) => {
   switch (object.type) {
@@ -130,6 +137,8 @@ export const renderName = (object: CodableObject) => {
       return `根 ${object.rootIndex} 笔 (${
         object.strokeIndex * 2 - Math.sign(object.strokeIndex)
       }, ${object.strokeIndex * 2})`;
+    case "自定义":
+      return `${object.subtype} ${object.index}`;
   }
 };
 
@@ -148,6 +157,8 @@ export const renderList = function (
       return [...list, object.rootIndex, object.strokeIndex];
     case "二笔":
       return [...list, object.rootIndex, object.strokeIndex];
+    case "自定义":
+      return [...list, object.subtype, object.index];
   }
   return list;
 };
@@ -173,6 +184,8 @@ export const parseList = function (value: (string | number)[]): CodableObject {
         rootIndex: value[1] as number,
         strokeIndex: value[2] as number,
       };
+    case "自定义":
+      return { type, subtype: value[1] as string, index: value[2] as number };
   }
   return { type };
 };
@@ -213,7 +226,7 @@ export const findElement = (
     case "字根":
       return signedIndex(sequence, object.rootIndex);
     case "笔画":
-    case "二笔": {
+    case "二笔":
       root = signedIndex(sequence, object.rootIndex);
       if (root === undefined) return undefined;
       strokes = extra.rootSequence.get(root);
@@ -233,6 +246,7 @@ export const findElement = (
       if (stroke1 === undefined) return undefined;
       const stroke2 = signedIndex(strokes, i2);
       return [stroke1, stroke2 ?? 0].join("");
-    }
+    case "自定义":
+      return signedIndex(result.custom[object.subtype] ?? [], object.index);
   }
 };
